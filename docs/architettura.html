@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Politics Hub — Architettura del sistema</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 190 200'%3E%3Cpolygon points='95,20 157.5,50.1 173,117.8 129.7,172.1 60.3,172.1 17,117.8 32.5,50.1' fill='%231E6FA8'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --navy:#0B2A45; --blue:#1E6FA8; --sky:#5CA9DD;
+    --green:#2E9E6B; --amber:#D9822B; --gray:#8FA0AF; --slate:#50637A;
+    --ink:#12222f; --muted:#5d7182; --line:#dbe6ef; --bg:#f3f7fb;
+    --serif:'Fraunces',Georgia,serif; --sans:'Inter',system-ui,-apple-system,sans-serif;
+    --glass:#f4f9fd; --surface:rgba(255,255,255,.88);
+    --edge:rgba(255,255,255,.95);
+    --shadow:inset 0 1px 0 #fff,0 0 0 1px rgba(40,79,110,.07),0 18px 42px -26px rgba(11,42,69,.24);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--sans);color:var(--ink);background:radial-gradient(ellipse at 4% 0%,#dbeaf9,transparent 46%),radial-gradient(ellipse at 97% 30%,#e0eff0,transparent 44%),linear-gradient(145deg,#f6f9fd,#eaf1f8);background-attachment:fixed;-webkit-font-smoothing:antialiased}
+  .page{max-width:1380px;margin:0 auto;padding:22px 24px 56px}
+
+  header.top{position:relative;isolation:isolate;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding:16px 22px;border:1px solid var(--edge);border-radius:28px;box-shadow:var(--shadow);margin-bottom:38px}
+  header.top::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;clip-path:inset(0 round 28px);border-radius:inherit;background:linear-gradient(115deg,rgba(255,255,255,.65),transparent 60%,rgba(255,255,255,.35)),var(--glass);-webkit-backdrop-filter:blur(24px) saturate(140%);backdrop-filter:blur(24px) saturate(140%)}
+  header.top::after{content:"";position:absolute;inset:2px;border:1px solid rgba(255,255,255,.6);border-radius:inherit;pointer-events:none}
+  .brand{display:flex;align-items:center;gap:12px}
+  .brand svg{width:38px;height:40px;fill:var(--blue);padding:5px;border:1px solid #fff;border-radius:12px;background:linear-gradient(135deg,#fff,#deedf8);box-shadow:0 3px 10px -6px rgba(11,42,69,.3)}
+  .brand .t{font-family:var(--serif);font-size:22px;font-weight:600;color:var(--navy);line-height:1.1}
+  .brand .s{font-size:12.5px;color:var(--muted)}
+  .lang{display:inline-flex;background:rgba(218,233,245,.7);border:1px solid #fff;box-shadow:inset 0 1px 2px rgba(11,42,69,.04);border-radius:999px;padding:4px}
+  .lang button{border:0;background:none;font:600 13px var(--sans);color:var(--muted);padding:10px 17px;min-height:40px;border-radius:999px;cursor:pointer;transition:background .2s,box-shadow .2s}
+  .lang button.on{background:linear-gradient(145deg,#fff,#f1f8fc);color:var(--navy);box-shadow:inset 0 1px 0 #fff,0 3px 8px rgba(11,42,69,.12)}
+  :focus-visible{outline:3px solid var(--blue);outline-offset:4px}
+
+  h1{font-family:var(--serif);font-weight:600;color:var(--navy);font-size:clamp(30px,3.4vw,44px);margin:0 0 12px;letter-spacing:-.01em}
+  .lead{color:var(--muted);font-size:15px;line-height:1.55;max-width:860px;margin:0 0 26px}
+
+  .legend{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}
+  .legend .it{display:flex;align-items:center;gap:9px;font-size:11px;font-weight:500;padding:8px 12px;border:1px solid var(--edge);border-radius:99px;background:rgba(255,255,255,.72);box-shadow:inset 0 1px 0 #fff}
+  .legend .sw{width:20px;border-top:3px solid var(--c)}
+  .legend .sw.dash{border-top-style:dashed}
+
+  .canvas{background:radial-gradient(circle,rgba(54,105,145,.12) .8px,transparent 1px) 0 0/24px 24px,linear-gradient(130deg,rgba(255,255,255,.96),rgba(244,249,253,.84));border:1px solid var(--edge);border-radius:28px;box-shadow:var(--shadow);padding:16px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-color:#9bb8ce transparent;scrollbar-width:thin}
+  .diagram-hint{display:none;font-size:12px;color:var(--muted);margin:0 0 12px}
+  .stage{position:relative;width:1320px;height:950px;transform-origin:top left}
+  svg.wires{position:absolute;left:0;top:0;width:1320px;height:950px;overflow:visible}
+
+  .node{position:absolute;background:linear-gradient(135deg,#fff,#f3f8fc);border:1px solid rgba(255,255,255,.98);border-radius:18px;padding:12px 16px 12px 20px;
+        box-shadow:inset 0 1px 0 #fff,0 0 0 1px #d1e0eb,0 9px 22px -14px rgba(11,42,69,.3);display:flex;flex-direction:column;justify-content:center}
+  .node::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:4px;border-radius:0 4px 4px 0;background:var(--acc)}
+  .node .tag{font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--acc);margin:0 0 4px}
+  .node .ttl{font-family:var(--serif);font-size:17px;font-weight:600;color:var(--navy);line-height:1.2;margin:0}
+  .node .sub{font-size:12.3px;color:var(--muted);line-height:1.4;margin:5px 0 0}
+  .node.hub{background:radial-gradient(ellipse at 12% 0%,#477c9e,transparent 75%),linear-gradient(145deg,#204e70,#102f49);border-color:#7da6c2;box-shadow:inset 0 1px 0 rgba(233,249,255,.6),inset 0 -1px 0 rgba(0,20,40,.2),0 12px 28px -14px rgba(11,42,69,.6)}
+  .node.hub .ttl{color:#fff;font-size:19px}
+  .node.hub .sub{color:#c3dbef}
+
+  .lbl{position:absolute;transform:translate(-50%,-50%);background:linear-gradient(#fff,#f3f8fc);box-shadow:0 2px 5px rgba(11,42,69,.06);border:1.5px solid var(--c);border-radius:999px;
+       padding:3px 10px 3px 4px;font-size:11.5px;font-weight:600;color:var(--ink);white-space:nowrap;display:flex;align-items:center;gap:6px;line-height:1.2}
+  .lbl .n{width:18px;height:18px;border-radius:50%;background:var(--c);color:#fff;font-size:10.5px;font-weight:700;display:grid;place-items:center;flex:none}
+  .lbl.plain{padding-left:10px}
+
+  .flows{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:18px;margin-top:26px}
+  .flow{position:relative;background:linear-gradient(135deg,rgba(255,255,255,.55),transparent 65%),var(--surface);border:1px solid var(--edge);border-radius:22px;padding:24px;box-shadow:var(--shadow)}
+  .flow::before{content:"";display:block;width:32px;height:3px;border-radius:3px;background:var(--c);margin-bottom:16px}
+  .flow h3{font-family:var(--serif);font-size:20px;color:var(--navy);margin:0 0 12px}
+  .flow ol{margin:0;padding-left:18px;font-size:13px;line-height:1.55;color:var(--ink)}
+  .flow li{margin:6px 0;padding-left:3px}
+  .flow li::marker{color:var(--c);font-weight:600}
+  .note{margin-top:18px;font-size:13.5px;color:var(--muted);line-height:1.6;max-width:900px;padding:18px 20px;border-left:2px solid #a7c9df;background:rgba(255,255,255,.42);border-radius:0 14px 14px 0}
+  @supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){:root{--glass:rgba(239,247,253,.86)}}
+  @media(max-width:1140px){.diagram-hint{display:block}}
+  @media(max-width:600px){.page{padding:14px 14px 36px}header.top{padding:14px 16px;gap:12px;margin-bottom:28px;border-radius:24px}header.top::before{clip-path:inset(0 round 24px)}.brand .t{font-size:18px}.brand .s{font-size:11px}.brand{gap:8px}.brand svg{width:30px;height:34px}.lang button{padding:8px 12px;min-height:36px}.lead{font-size:14px}.canvas{border-radius:22px}.legend .it{font-size:10px;padding:7px 10px}.flow{padding:22px}.note{padding:14px 16px}}
+  @media(prefers-reduced-transparency:reduce),(prefers-contrast:more){:root{--glass:#f4f9fd;--surface:#fff;--edge:#bacddc}header.top::before{-webkit-backdrop-filter:none;backdrop-filter:none}.canvas,.legend .it,.note{background:#fff}}
+  @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
+  @media print{body{background:#fff}.page{padding:0}header.top{margin-bottom:20px}.lang,.diagram-hint{display:none}header.top,.canvas,.flow,.node{box-shadow:none}.canvas{overflow:visible;background:#fff}.flow{break-inside:avoid}header.top::before{background:#fff;backdrop-filter:none;-webkit-backdrop-filter:none}}
+</style>
+</head>
+<body>
+<main class="page">
+
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 190 200" aria-hidden="true"><polygon points="95,20 157.5,50.1 173,117.8 129.7,172.1 60.3,172.1 17,117.8 32.5,50.1"/></svg>
+      <div><div class="t">Politics Hub APS</div><div class="s" data-t="sub"></div></div>
+    </div>
+    <div class="lang" role="group" aria-label="Lingua / Language"><button id="b-it" class="on" onclick="setLang('it')">IT</button><button id="b-en" onclick="setLang('en')">EN</button></div>
+  </header>
+
+  <h1 data-t="h1"></h1>
+  <p class="lead" data-t="lead"></p>
+
+  <div class="legend" id="legend"></div>
+
+  <p class="diagram-hint" data-t="hint"></p>
+  <div class="canvas" id="canvas" tabindex="0" role="region" aria-label="Diagramma dell’architettura">
+    <div class="stage" id="stage">
+      <svg class="wires" id="wires" aria-hidden="true" viewBox="0 0 1320 950"><defs id="defs"></defs></svg>
+    </div>
+  </div>
+
+  <div class="flows" id="flows"></div>
+  <p class="note" data-t="note"></p>
+</main>
+
+<script>
+const T = {
+  hint:{it:'↔ Scorri il diagramma in orizzontale per esplorare tutti i collegamenti.',en:'↔ Scroll the diagram horizontally to explore all the connections.'},
+  sub:{it:'Architettura del sistema',en:'System architecture'},
+  h1:{it:'Come funziona il sistema',en:'How the system works'},
+  lead:{it:'Sito statico su GitHub Pages, Google Apps Script come “server”, un Foglio Google come database e le app dei volontari per il check-in. Tutto a costo zero. Ogni colore è un processo: i numeri indicano l’ordine dei passaggi.',
+        en:'A static site on GitHub Pages, Google Apps Script as the “server”, a Google Sheet as the database and the volunteer apps for check-in. All at zero cost. Each colour is one process; the numbers show the order of the steps.'},
+  note:{it:'Il punto chiave: il sito pubblico e le app parlano con un solo “motore”, Google Apps Script, tramite un unico indirizzo salvato in config.js. I contenuti (eventi e articoli) invece non passano da Google: vengono salvati direttamente su GitHub.',
+        en:'The key point: the public site and the apps all talk to a single “engine”, Google Apps Script, through one URL stored in config.js. Content (events and articles) does not go through Google: it is saved directly to GitHub.'}
+};
+
+const COL={blue:'#1E6FA8',green:'#2E9E6B',amber:'#D9822B',gray:'#8FA0AF',slate:'#50637A'};
+
+/* ---- nodes: 3 columns (x 60 / 500 / 940, width 320) ---- */
+const N={
+  visitors:{x:60, y:40, w:320,h:86, acc:'#0B2A45',
+    tag:['Utenti','Users'], ttl:['Visitatori','Visitors'], sub:['Chiunque apre politicshub.it','Anyone opening politicshub.it']},
+  volunteers:{x:940,y:40, w:320,h:86, acc:'#0B2A45',
+    tag:['Utenti','Users'], ttl:['Volontari','Volunteers'], sub:['Staff con token GitHub e PIN','Staff with GitHub token and PIN']},
+
+  site:{x:60, y:200,w:320,h:112, acc:COL.blue,
+    tag:['Frontend · GitHub Pages','Frontend · GitHub Pages'], ttl:['Sito pubblico','Public website'],
+    sub:['Pagine IT/EN · moduli (forms.js) · eventi e articoli (content.js)','IT/EN pages · forms (forms.js) · events & articles (content.js)']},
+  github:{x:500,y:200,w:320,h:112, acc:'#24292f',
+    tag:['GitHub','GitHub'], ttl:['Repository del sito','Website repository'],
+    sub:['Codice del sito + data/events.json e data/articles.json','Site code + data/events.json and data/articles.json']},
+  apps:{x:940,y:200,w:320,h:112, acc:COL.blue,
+    tag:['Frontend · Volontari','Frontend · Volunteers'], ttl:['Pannello Admin + App','Admin panel + Apps'],
+    sub:['Web admin · app iOS · app Android: pubblicazione e check-in','Web admin · iOS app · Android app: publishing and check-in']},
+
+  script:{x:500,y:420,w:320,h:112, acc:COL.sky, hub:true,
+    tag:['Backend · il “server”','Backend · the “server”'], ttl:['Google Apps Script','Google Apps Script'],
+    sub:['Code.gs pubblicato come Web App · trigger ogni minuto','Code.gs deployed as a Web App · runs every minute']},
+
+  sheet:{x:60, y:640,w:320,h:112, acc:'#188038',
+    tag:['Database','Database'], ttl:['Google Sheet','Google Sheet'],
+    sub:['MailingList · Eventi · Registrazioni · Log · Rubrica · LinkUtili','MailingList · Events · Registrations · Log · Directory · Links']},
+  qr:{x:500,y:640,w:320,h:112, acc:'#64748b',
+    tag:['Servizio esterno','External service'], ttl:['quickchart.io','quickchart.io'],
+    sub:['Crea l’immagine del QR code firmato','Creates the signed QR code image']},
+  drive:{x:940,y:640,w:320,h:112, acc:'#188038',
+    tag:['Archivio','Storage'], ttl:['Google Drive','Google Drive'],
+    sub:['Cartelle dei materiali, consultabili dalle app','Material folders, browsable from the apps']},
+
+  email:{x:500,y:840,w:320,h:86, acc:COL.blue,
+    tag:['Output','Output'], ttl:['Email con biglietto QR','Email with QR ticket'],
+    sub:['Arriva al partecipante in 1–2 minuti','Reaches the attendee in 1–2 minutes']},
+};
+
+/* ---- orthogonal wires: list of points; label at (lx,ly) ---- */
+const W=[
+  // Blue — signup & tickets
+  {c:'blue', n:1, pts:[[220,126],[220,200]], lx:220,ly:163, t:['compila un modulo','fills in a form']},
+  {c:'blue', n:2, pts:[[300,312],[300,462],[500,462]], lx:400,ly:462, t:['invia i dati','sends data']},
+  {c:'blue', n:4, pts:[[660,532],[660,640]], lx:660,ly:586, t:['genera il QR','generates QR']},
+  {c:'blue', n:5, pts:[[660,752],[660,840]], lx:660,ly:796, t:['invia il biglietto','sends ticket']},
+  // Slate — data read/write (step 3 of signup, step 2 of check-in)
+  {c:'slate', n:3, two:true, pts:[[500,500],[220,500],[220,640]], lx:220,ly:572, t:['legge / scrive','reads / writes']},
+  // Green — publishing
+  {c:'green', n:1, pts:[[1100,126],[1100,200]], lx:1100,ly:163, t:['pubblica un contenuto','publishes content']},
+  {c:'green', n:2, pts:[[940,256],[820,256]], lx:880,ly:256, t:['commit','commit']},
+  {c:'green', n:3, pts:[[500,256],[380,256]], lx:440,ly:256, t:['aggiorna','updates']},
+  // Amber — check-in
+  {c:'amber', n:1, pts:[[1020,312],[1020,462],[820,462]], lx:920,ly:462, t:['scansiona QR · PIN','scans QR · PIN']},
+  // Gray — Drive
+  {c:'gray', n:'', dash:true, pts:[[820,500],[1100,500],[1100,640]], lx:1100,ly:572, t:['legge le cartelle','reads folders']},
+];
+
+const FLOWS=[
+  {c:'blue', h:['Iscrizione e biglietti','Signup and tickets'], s:[
+    ['Il visitatore compila il modulo newsletter o iscrizione evento.','The visitor fills in the newsletter or event form.'],
+    ['Il sito invia i dati ad Apps Script (indirizzo in config.js).','The site sends the data to Apps Script (URL in config.js).'],
+    ['Apps Script salva la riga nel Foglio Google, senza overbooking.','Apps Script saves the row in the Google Sheet, no overbooking.'],
+    ['Ogni minuto genera il QR firmato tramite quickchart.io…','Every minute it generates the signed QR via quickchart.io…'],
+    ['…e invia l’email con il biglietto al partecipante.','…and emails the ticket to the attendee.']]},
+  {c:'green', h:['Pubblicazione contenuti','Publishing content'], s:[
+    ['Il volontario crea un evento o un articolo dal pannello/app.','A volunteer creates an event or article in the panel/app.'],
+    ['Il pannello fa un commit su GitHub con il suo token personale.','The panel commits to GitHub with their personal token.'],
+    ['GitHub Pages ripubblica il sito in 1–2 minuti con i nuovi dati.','GitHub Pages republishes the site in 1–2 minutes with the new data.']]},
+  {c:'amber', h:['Check-in all’evento','Event check-in'], s:[
+    ['Il volontario scansiona il QR con l’app (verifica immediata sul telefono).','The volunteer scans the QR in the app (instant check on the phone).'],
+    ['L’app sincronizza con Apps Script (protetto da PIN), che segna la presenza nel Foglio e blocca i doppi ingressi.','The app syncs with Apps Script (PIN-protected), which marks attendance in the Sheet and blocks double entry.']]},
+];
+
+let LANG='it';
+const stage=document.getElementById('stage'), svg=document.getElementById('wires'), defs=document.getElementById('defs');
+const NS='http://www.w3.org/2000/svg';
+const L=(a)=>a[LANG==='it'?0:1];
+
+/* arrow markers */
+Object.entries(COL).forEach(([k,v])=>{
+  defs.insertAdjacentHTML('beforeend',
+   `<marker id="m-${k}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${v}"/></marker>`);
+});
+
+/* rounded orthogonal path */
+function roundPath(p,r=14){
+  let d=`M${p[0][0]},${p[0][1]}`;
+  for(let i=1;i<p.length;i++){
+    const [x,y]=p[i];
+    if(i<p.length-1){
+      const [px,py]=p[i-1],[nx,ny]=p[i+1];
+      const d1=Math.hypot(x-px,y-py), d2=Math.hypot(nx-x,ny-y), rr=Math.min(r,d1/2,d2/2);
+      const ax=x-(x-px)/d1*rr, ay=y-(y-py)/d1*rr, bx=x+(nx-x)/d2*rr, by=y+(ny-y)/d2*rr;
+      d+=` L${ax},${ay} Q${x},${y} ${bx},${by}`;
+    } else d+=` L${x},${y}`;
+  }
+  return d;
+}
+
+W.forEach(w=>{
+  const p=document.createElementNS(NS,'path');
+  p.setAttribute('d',roundPath(w.pts)); p.setAttribute('fill','none');
+  p.setAttribute('stroke',COL[w.c]); p.setAttribute('stroke-width','2.4'); p.setAttribute('stroke-linejoin','round');
+  if(w.dash) p.setAttribute('stroke-dasharray','7 6');
+  p.setAttribute('marker-end',`url(#m-${w.c})`);
+  if(w.two) p.setAttribute('marker-start',`url(#m-${w.c})`);
+  svg.appendChild(p);
+});
+
+function render(){
+  document.documentElement.lang=LANG;
+  document.getElementById('canvas').setAttribute('aria-label',LANG==='it'?'Diagramma dell’architettura':'System architecture diagram');
+  document.querySelectorAll('[data-t]').forEach(e=>e.textContent=L([T[e.dataset.t].it,T[e.dataset.t].en]));
+  stage.querySelectorAll('.node,.lbl').forEach(e=>e.remove());
+  for(const k in N){
+    const d=N[k], e=document.createElement('div');
+    e.className='node'+(d.hub?' hub':'');
+    Object.assign(e.style,{left:d.x+'px',top:d.y+'px',width:d.w+'px',height:d.h+'px'});
+    e.style.setProperty('--acc',d.hub?'#8cc6ee':d.acc);
+    e.innerHTML=`<p class="tag">${L(d.tag)}</p><p class="ttl">${L(d.ttl)}</p><p class="sub">${L(d.sub)}</p>`;
+    stage.appendChild(e);
+  }
+  W.forEach(w=>{
+    const e=document.createElement('div');
+    e.className='lbl'+(w.n===''?' plain':''); e.style.setProperty('--c',COL[w.c]);
+    e.style.left=w.lx+'px'; e.style.top=w.ly+'px';
+    e.innerHTML=(w.n!==''?`<span class="n">${w.n}</span>`:'')+L(w.t);
+    stage.appendChild(e);
+  });
+  const lg=[['blue','Iscrizione e biglietti','Signup & tickets'],['green','Pubblicazione contenuti','Publishing content'],
+            ['amber','Check-in','Check-in'],['slate','Lettura/scrittura dati','Data read/write'],['gray','Materiali Drive','Drive materials',1]];
+  document.getElementById('legend').innerHTML=lg.map(l=>`<div class="it"><span class="sw${l[3]?' dash':''}" style="--c:${COL[l[0]]}"></span>${LANG==='it'?l[1]:l[2]}</div>`).join('');
+  document.getElementById('flows').innerHTML=FLOWS.map(f=>`<div class="flow" style="--c:${COL[f.c]}"><h3>${L(f.h)}</h3><ol>${f.s.map(s=>`<li>${L(s)}</li>`).join('')}</ol></div>`).join('');
+  document.getElementById('b-it').classList.toggle('on',LANG==='it');
+  document.getElementById('b-en').classList.toggle('on',LANG==='en');
+  document.getElementById('b-it').setAttribute('aria-pressed',String(LANG==='it'));
+  document.getElementById('b-en').setAttribute('aria-pressed',String(LANG==='en'));
+}
+function setLang(l){LANG=l;render();fit();}
+function fit(){
+  const c=document.getElementById('canvas'), avail=c.clientWidth-32;
+  const minimum=window.matchMedia('print').matches?0:.8;
+  const s=Math.max(minimum,Math.min(1,avail/1320));
+  stage.style.transform=`scale(${s})`; stage.style.marginBottom=(950*s-950)+'px'; stage.style.marginRight=(1320*s-1320)+'px';
+}
+window.addEventListener('resize',fit);
+window.addEventListener('beforeprint',fit);
+window.addEventListener('afterprint',fit);
+render(); fit();
+if(document.fonts) document.fonts.ready.then(fit);
+</script>
+</body>
+</html>

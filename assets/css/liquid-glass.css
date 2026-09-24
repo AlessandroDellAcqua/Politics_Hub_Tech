@@ -1,0 +1,425 @@
+/* ==========================================================================
+   Politics Hub APS — liquid glass
+   1. Header: ultra-clear refracting glass (optics in assets/js/liquid-glass.js)
+   2. Buttons & panels: the layered glass of codepen.io/Petr-Knoll/pen/QwWLZdx
+   3. Dropdown menus: blue-tinted "dark glass"
+   Plus a thin light-blue network texture behind every light section, so clear
+   glass always has something to show (injected by main.js).
+   ========================================================================== */
+
+@property --angle-1 { syntax: "<angle>"; inherits: true; initial-value: -75deg; }
+@property --angle-2 { syntax: "<angle>"; inherits: true; initial-value: -45deg; }
+@property --tilt-x  { syntax: "<angle>"; inherits: true; initial-value: 0deg; }
+@property --tilt-y  { syntax: "<angle>"; inherits: true; initial-value: 0deg; }
+
+:root {
+  --u: 17px;                                   /* one codepen "em", scaled to our button size */
+  --lg-time: 400ms;
+  --lg-ease: cubic-bezier(.25, 1, .5, 1);
+}
+
+/* ---------- Texture: thin, light, slowly moving connections ---------- */
+.section > .container { position: relative; z-index: 1; }
+.net-bg.net-thin { opacity: .9; }
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) { .net-bg.net-thin { display: none; } }
+
+/* ---------- Shared layer geometry ---------- */
+.lg:not(.site-header) { position: relative; }       /* the header stays position: fixed */
+.lg { isolation: isolate; }
+.lg > .lg-refract, .lg > .lg-rim, .lg > .lg-shine {
+  position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+}
+.lg > .lg-refract { z-index: -1; overflow: hidden; }
+.lg > .lg-rim, .lg > .lg-shine { z-index: 2; }
+
+/* ==========================================================================
+   1. HEADER — ultra-clear, refracting at the rim
+   ========================================================================== */
+.site-header.lg { border: 0; background: none; }
+.site-header::before {                              /* the old frosted pane becomes a faint tint */
+  background: rgba(10,34,54,.025) !important;
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+  transition: background .35s ease;
+}
+.site-header::after { display: none; }
+.site-header.lg {
+  box-shadow: inset 0 1px 1px rgba(255,255,255,.45), inset 0 -1px 1px rgba(255,255,255,.12),
+    0 1px 2px rgba(0,15,30,.08), 0 16px 34px -20px rgba(0,15,30,.4);
+}
+.lg-clear-only .site-header > .lg-refract,
+.lg-refracts .site-header:not(.lg-bends) > .lg-refract {
+  -webkit-backdrop-filter: blur(1px) saturate(1.4); backdrop-filter: blur(1px) saturate(1.4);
+}
+.site-header > .lg-rim {
+  padding: 1px;
+  background: conic-gradient(from var(--angle-1), rgba(255,255,255,.8), rgba(255,255,255,.08) 7% 40%,
+      rgba(255,255,255,.65) 50%, rgba(255,255,255,.08) 60% 93%, rgba(255,255,255,.8));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude;
+}
+.site-header > .lg-shine { display: none; }
+.site-header .nav-wrap { position: relative; z-index: 3; }
+
+/* Lettering: light over dark sections, ink over light ones — whether scrolled or not */
+.site-header.over-dark .brand span,
+.site-header.over-dark .site-nav > ul > li > a:not(.nav-cta),
+.site-header.over-dark .lang-toggle, .site-header.over-dark .lang-toggle b,
+.site-header.over-dark .sub-toggle { color: #f2f8fc; text-shadow: 0 1px 12px rgba(0,18,32,.55); }
+.site-header.over-dark .brand svg polygon { fill: #d3efff; }
+.site-header.over-dark .nav-toggle { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.25); }
+.site-header.over-dark .nav-toggle span { background: #fff; }
+
+.site-header:not(.over-dark) .brand span,
+.site-header:not(.over-dark) .site-nav > ul > li > a:not(.nav-cta),
+.site-header:not(.over-dark) .lang-toggle, .site-header:not(.over-dark) .lang-toggle b,
+.site-header:not(.over-dark) .sub-toggle { color: var(--ink); text-shadow: 0 0 10px rgba(255,255,255,.95), 0 1px 3px rgba(255,255,255,.9); }
+.site-header:not(.over-dark) .brand svg polygon { fill: var(--blue); }
+.site-header:not(.over-dark) .nav-toggle { background: rgba(30,111,168,.06); border-color: rgba(30,111,168,.14); }
+.site-header:not(.over-dark) .nav-toggle span { background: var(--ink); }
+.site-header:not(.over-dark) .site-nav > ul > li > a:hover,
+.site-header:not(.over-dark) .site-nav > ul > li > a.active { background: rgba(30,111,168,.08); }
+.site-header.over-dark .site-nav > ul > li > a:hover,
+.site-header.over-dark .site-nav > ul > li > a.active { background: rgba(255,255,255,.12); }
+
+/* Over a light section: a whisper of white so ink text stays crisp */
+.site-header:not(.over-dark)::before { background: rgba(255,255,255,.07) !important; }
+/* Over a 3D scene or a photo (can be bright anywhere): a little more body behind the text */
+.site-header.over-media.over-dark::before { background: rgba(8,30,50,.2) !important; }
+.site-header.over-media:not(.over-dark)::before { background: rgba(255,255,255,.24) !important; }
+/* (the lens stays on over media too: only the tint changes) */
+
+/* ---------- Mirror lens (Safari, Firefox): the lens bends a live copy of the background ---------- */
+.lg > .lg-body { display: none; }
+.lg-stage { position: absolute; left: 0; top: 0; pointer-events: none; }
+.lg-stage.lg-page { width: 0; height: 0; }
+.lg-header-lens {
+  position: fixed; z-index: 99; overflow: hidden; pointer-events: none;
+  isolation: isolate; contain: strict;
+}
+.lg-mirrors .lg > .lg-refract {
+  z-index: -3;
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+}
+/* the copy is opaque, so the button's clear body and inner light are redrawn above it */
+.lg-mirrors .lg-button > .lg-body {
+  display: block; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
+  background: inherit;
+  box-shadow:
+    inset 0 calc(var(--u) * .125) calc(var(--u) * .125) rgba(0,0,0,.05),
+    inset 0 calc(var(--u) * -.125) calc(var(--u) * .125) rgba(255,255,255,.5),
+    inset 0 0 calc(var(--u) * .1) calc(var(--u) * .25) rgba(255,255,255,.2);
+}
+.lg-mirrors .lg-stage * { transition: none !important; animation: none !important; }
+
+/* ==========================================================================
+   2. BUTTONS — the codepen glass button
+   ========================================================================== */
+.lg.lg-button {
+  --bw: 1px;
+  clip-path: none; border-color: transparent !important;
+  background: linear-gradient(-75deg, rgba(255,255,255,.05), rgba(255,255,255,.2), rgba(255,255,255,.05));
+  box-shadow:
+    inset 0 calc(var(--u) * .125) calc(var(--u) * .125) rgba(0,0,0,.05),
+    inset 0 calc(var(--u) * -.125) calc(var(--u) * .125) rgba(255,255,255,.5),
+    0 calc(var(--u) * .25) calc(var(--u) * .125) calc(var(--u) * -.125) rgba(0,0,0,.2),
+    inset 0 0 calc(var(--u) * .1) calc(var(--u) * .25) rgba(255,255,255,.2),
+    0 0 0 0 rgba(255,255,255,1);
+  color: rgb(50,50,50); font-weight: 500; letter-spacing: -.01em;
+  text-shadow: 0 calc(var(--u) * .25) calc(var(--u) * .05) rgba(0,0,0,.1);
+  transition: all var(--lg-time) var(--lg-ease);
+}
+.lg.lg-button > .lg-refract {
+  -webkit-backdrop-filter: blur(clamp(1px, calc(var(--u) * .125), 4px));
+  backdrop-filter: blur(clamp(1px, calc(var(--u) * .125), 4px));
+  transition: backdrop-filter var(--lg-time) var(--lg-ease);
+}
+.lg.lg-button:hover {
+  transform: scale(.975);
+  box-shadow:
+    inset 0 calc(var(--u) * .125) calc(var(--u) * .125) rgba(0,0,0,.05),
+    inset 0 calc(var(--u) * -.125) calc(var(--u) * .125) rgba(255,255,255,.5),
+    0 calc(var(--u) * .15) calc(var(--u) * .05) calc(var(--u) * -.1) rgba(0,0,0,.25),
+    inset 0 0 calc(var(--u) * .05) calc(var(--u) * .1) rgba(255,255,255,.5),
+    0 0 0 0 rgba(255,255,255,1);
+  text-shadow: calc(var(--u) * .025) calc(var(--u) * .025) calc(var(--u) * .025) rgba(0,0,0,.12);
+}
+.lg.lg-button:hover > .lg-refract { -webkit-backdrop-filter: blur(.2px); backdrop-filter: blur(.2px); }
+.lg.lg-button:active {
+  transform: rotate3d(1, 0, 0, 25deg);
+  box-shadow:
+    inset 0 calc(var(--u) * .125) calc(var(--u) * .125) rgba(0,0,0,.05),
+    inset 0 calc(var(--u) * -.125) calc(var(--u) * .125) rgba(255,255,255,.5),
+    0 calc(var(--u) * .125) calc(var(--u) * .125) calc(var(--u) * -.125) rgba(0,0,0,.2),
+    inset 0 0 calc(var(--u) * .1) calc(var(--u) * .25) rgba(255,255,255,.2),
+    0 calc(var(--u) * .225) calc(var(--u) * .05) 0 rgba(0,0,0,.05),
+    0 calc(var(--u) * .25) 0 0 rgba(255,255,255,.75),
+    inset 0 calc(var(--u) * .25) calc(var(--u) * .05) 0 rgba(0,0,0,.15);
+  text-shadow: calc(var(--u) * .025) calc(var(--u) * .25) calc(var(--u) * .05) rgba(0,0,0,.12);
+}
+
+/* Outline: dark + light conic that turns on hover (codepen button::after) */
+.lg-button > .lg-rim, .lg-panel > .lg-rim {
+  inset: calc(var(--bw, 1px) / -2);
+  padding: var(--bw, 1px); box-sizing: border-box;
+  background:
+    conic-gradient(from var(--angle-1) at 50% 50%,
+      rgba(0,0,0,.5), rgba(0,0,0,0) 5% 40%, rgba(0,0,0,.5) 50%, rgba(0,0,0,0) 60% 95%, rgba(0,0,0,.5)),
+    linear-gradient(180deg, rgba(255,255,255,.5), rgba(255,255,255,.5));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude;
+  box-shadow: inset 0 0 0 calc(var(--bw, 1px) / 2) rgba(255,255,255,.5);
+  transition: --angle-1 500ms ease;
+}
+.lg-button:hover { --angle-1: -125deg; }
+.lg-button:active { --angle-1: -75deg; }
+
+/* Specular sweep (codepen span::after) */
+.lg-button > .lg-shine, .lg-panel > .lg-shine {
+  inset: calc(var(--bw, 1px) / 2);
+  overflow: clip; mix-blend-mode: screen;
+  background: linear-gradient(var(--angle-2), rgba(255,255,255,0) 0%, rgba(255,255,255,.5) 40% 50%, rgba(255,255,255,0) 55%) no-repeat;
+  background-size: 200% 200%; background-position: 0% 50%;
+  transition: background-position calc(var(--lg-time) * 1.25) var(--lg-ease), --angle-2 calc(var(--lg-time) * 1.25) var(--lg-ease);
+}
+.lg-button:hover > .lg-shine { background-position: 25% 50%; }
+.lg-button:active > .lg-shine { background-position: 50% 15%; --angle-2: -15deg; }
+
+/* Soft ring shadow projected below (codepen .button-shadow) */
+.lg > .lg-shadow {
+  --cut: calc(var(--u) * 2);
+  position: absolute; z-index: -2; pointer-events: none;
+  width: calc(100% + var(--cut)); height: calc(100% + var(--cut));
+  top: calc(var(--cut) / -2); left: calc(var(--cut) / -2);
+  filter: blur(clamp(2px, calc(var(--u) * .125), 12px));
+  transition: filter var(--lg-time) var(--lg-ease);
+}
+.lg > .lg-shadow::after {
+  content: ""; position: absolute; box-sizing: border-box;
+  border-radius: var(--lg-r, 999px);
+  width: calc(100% - var(--cut) - var(--u) * .25); height: calc(100% - var(--cut) - var(--u) * .25);
+  top: calc(var(--cut) - var(--u) * .5); left: calc(var(--cut) - var(--u) * .875 + var(--shadow-x, 0px));
+  padding: calc(var(--u) * .125);
+  background: linear-gradient(180deg, rgba(0,0,0,.2), rgba(0,0,0,.1));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude;
+  transition: all var(--lg-time) var(--lg-ease);
+}
+.lg-button:hover > .lg-shadow { filter: blur(clamp(2px, calc(var(--u) * .0625), 6px)); }
+.lg-button:hover > .lg-shadow::after { top: calc(var(--cut) - var(--u) * .875); }
+.lg-button:active > .lg-shadow { filter: blur(clamp(2px, calc(var(--u) * .125), 12px)); }
+.lg-button:active > .lg-shadow::after { top: calc(var(--cut) - var(--u) * .5); opacity: .75; }
+
+/* Colour roles */
+.hero .btn-primary.lg:hover, .btn-primary.lg:hover { background: linear-gradient(-75deg, rgba(92,169,221,.07), rgba(92,169,221,.2), rgba(92,169,221,.07)); }
+.btn-ghost.lg:hover, .btn-outline.lg:hover, .btn-dark.lg:hover { background: linear-gradient(-75deg, rgba(255,255,255,.05), rgba(255,255,255,.2), rgba(255,255,255,.05)); }
+.btn-primary.lg { color: var(--blue-deep); background: linear-gradient(-75deg, rgba(92,169,221,.07), rgba(92,169,221,.2), rgba(92,169,221,.07)); }
+.btn-primary.lg::after { color: inherit; }
+/* On dark backgrounds the glass keeps its shape; the lettering turns light */
+.hero .btn.lg, .page-hero .btn.lg, .banner-dark .btn.lg, .manifesto-band .btn.lg, .site-footer .btn.lg,
+.event-panel.layout-hero .btn.lg {
+  color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.18), 0 calc(var(--u) * .15) calc(var(--u) * .12) rgba(0,0,0,.14);
+}
+.hero .btn-primary.lg, .banner-dark .btn-primary.lg { color: #dff2ff; }
+.banner-5x1000 .btn.lg { color: #fff; }
+
+/* Hero badge and scroll cue use the same button glass */
+.hero .badge.lg { padding: 9px 17px 9px 14px; border-radius: 99px; --u: 12px; }
+.scroll-cue span.lg { width: 36px; height: 36px; border: 0; border-radius: 50%; --u: 12px; color: #fff; }
+
+/* ==========================================================================
+   Panels — cards, stats, forms: the same glass as the buttons, still (no optics),
+   with a careful pointer animation: tilt, moving light, turning rim, parallax lift.
+   ========================================================================== */
+.lg.lg-panel {
+  --bw: 1px; --u: 20px; --lg-r: var(--radius);
+  background: linear-gradient(-75deg, rgba(255,255,255,.08), rgba(255,255,255,.3), rgba(255,255,255,.08)) !important;
+  border-color: transparent !important;
+  box-shadow:
+    inset 0 2px 2px rgba(0,0,0,.035),
+    inset 0 -2px 2px rgba(255,255,255,.55),
+    inset 0 0 2px 5px rgba(255,255,255,.18),
+    0 3px 2px -2px rgba(0,0,0,.12),
+    0 20px 36px -24px rgba(11,42,69,.3) !important;
+  overflow: visible !important;
+  transform: perspective(1100px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) translateY(0);
+  transition: transform 650ms var(--lg-ease), box-shadow var(--lg-time) var(--lg-ease),
+    --tilt-x 650ms var(--lg-ease), --tilt-y 650ms var(--lg-ease);
+  will-change: transform;
+}
+.lg-panel > .lg-refract { -webkit-backdrop-filter: blur(2px) saturate(1.2); backdrop-filter: blur(2px) saturate(1.2); }
+/* Photographs keep their shape inside the rounded glass */
+.card.lg-panel .thumb { border-radius: calc(var(--radius) - 1px) calc(var(--radius) - 1px) 0 0; }
+.card.lg-panel .body, .stat.lg-panel > :not([class^="lg-"]) {
+  transition: transform 650ms var(--lg-ease);
+}
+
+/* Hover: the pane lifts toward the pointer and catches the light where the pointer is */
+.lg.lg-panel:hover { transform: perspective(1100px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) translateY(-3px); }
+.lg.lg-panel.lg-hot {
+  transform: perspective(1100px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) translateY(-6px);
+  transition: transform 160ms ease-out, box-shadow var(--lg-time) var(--lg-ease);
+  box-shadow:
+    inset 0 2px 2px rgba(0,0,0,.035),
+    inset 0 -2px 2px rgba(255,255,255,.6),
+    inset 0 0 1px 2px rgba(255,255,255,.45),
+    0 3px 2px -2px rgba(0,0,0,.12),
+    var(--shadow-x, 0px) 30px 46px -26px rgba(11,42,69,.36) !important;
+}
+.lg-panel.lg-hot .body, .stat.lg-panel.lg-hot > :not([class^="lg-"]) {
+  transform: translate(var(--par-x, 0), var(--par-y, 0));
+  transition: transform 160ms ease-out;
+}
+.lg-panel > .lg-shine {
+  background:
+    radial-gradient(420px circle at var(--glow-x, 50%) var(--glow-y, 0%), rgba(255,255,255,.55), rgba(255,255,255,0) 45%),
+    linear-gradient(var(--angle-2), rgba(255,255,255,0) 0%, rgba(255,255,255,.4) 40% 50%, rgba(255,255,255,0) 55%);
+  background-size: 100% 100%, 220% 220%; background-repeat: no-repeat;
+  background-position: 0 0, 0% 50%;
+  opacity: .35;
+  transition: opacity 500ms var(--lg-ease), background-position 900ms var(--lg-ease);
+}
+.lg-panel.lg-hot > .lg-shine { opacity: 1; background-position: 0 0, 30% 50%; }
+.lg-panel:not(.lg-hot) > .lg-rim { transition: --angle-1 900ms var(--lg-ease); }
+
+/* Small but important writing — the numbers — floats above the glass with a projected shadow */
+.stat.lg-panel .num {
+  text-shadow: 0 calc(var(--u) * .25) calc(var(--u) * .06) rgba(11,42,69,.12);
+  transition: text-shadow 650ms var(--lg-ease), transform 650ms var(--lg-ease);
+}
+.stat.lg-panel .label { text-shadow: 0 3px 1px rgba(11,42,69,.08); transition: text-shadow 650ms var(--lg-ease); }
+.stat.lg-panel.lg-hot .num {
+  transform: translateY(-4px) scale(1.04);
+  text-shadow: calc(var(--par-x, 0px) * -1.5) 14px 6px rgba(11,42,69,.14);
+  transition: text-shadow 200ms ease-out, transform 200ms ease-out;
+}
+.stat.lg-panel.lg-hot .label { text-shadow: calc(var(--par-x, 0px) * -1) 6px 3px rgba(11,42,69,.1); }
+.stat.lg-counted .num { animation: lg-settle 700ms var(--lg-ease); }
+@keyframes lg-settle { 0% { transform: translateY(-3px) scale(1.05); } 100% { transform: none; } }
+
+/* ==========================================================================
+   3. DROPDOWN MENUS — blue-tinted dark glass
+   ========================================================================== */
+.site-nav .sub {
+  background: linear-gradient(150deg, rgba(52,118,165,.5), rgba(14,48,77,.62) 60%, rgba(9,34,56,.68)) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(170%) brightness(.8) !important;
+  backdrop-filter: blur(18px) saturate(170%) brightness(.8) !important;
+  border: 0 !important;
+  box-shadow: inset 0 1px 1px rgba(255,255,255,.35), inset 0 -1px 1px rgba(255,255,255,.08),
+    inset 0 0 18px rgba(140,200,240,.08), 0 22px 44px -18px rgba(0,15,30,.6) !important;
+}
+.site-nav .sub::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
+  background: conic-gradient(from -75deg, rgba(255,255,255,.7), rgba(255,255,255,.06) 8% 40%,
+      rgba(255,255,255,.45) 50%, rgba(255,255,255,.06) 60% 92%, rgba(255,255,255,.7));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude;
+}
+.site-header .site-nav .sub a { color: #e9f4fb !important; text-shadow: none !important; }
+.site-header .site-nav .sub a:hover, .site-header .site-nav .sub a:focus-visible {
+  background: rgba(255,255,255,.13); color: #fff !important;
+}
+.site-header .site-nav .sub :focus-visible { outline-color: #bceaff; }
+.site-nav .lang-sub .code { color: #bfe3f8; background: rgba(255,255,255,.12); }
+.site-nav .lang-sub a.current { background: rgba(255,255,255,.16) !important; color: #fff !important; }
+
+/* Mobile: the whole menu panel is the same blue dark glass */
+@media (max-width: 1080px) {
+  .site-nav {
+    background: linear-gradient(150deg, rgba(52,118,165,.55), rgba(14,48,77,.7) 60%, rgba(9,34,56,.76)) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(170%) brightness(.8) !important;
+    backdrop-filter: blur(20px) saturate(170%) brightness(.8) !important;
+    border: 0 !important;
+    box-shadow: inset 0 1px 1px rgba(255,255,255,.35), 0 24px 48px -18px rgba(0,15,30,.6) !important;
+  }
+  .site-header .site-nav > ul > li > a:not(.nav-cta), .site-header .site-nav .sub-toggle,
+  .site-header .lang-switch .lang-toggle, .site-header .lang-switch .lang-toggle b {
+    color: #eef6fb !important; text-shadow: none !important;
+  }
+  .site-header .site-nav > ul > li > a:not(.nav-cta):hover { background: rgba(255,255,255,.12) !important; color: #fff !important; }
+  .site-header .sub-toggle, .site-header .lang-switch .lang-toggle { background: rgba(255,255,255,.08) !important; }
+  .site-nav .sub { background: rgba(255,255,255,.07) !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; box-shadow: none !important; }
+  .site-nav .sub::before { display: none; }
+  .has-sub.lang-switch { border-top-color: rgba(255,255,255,.14) !important; }
+  .site-header .site-nav :focus-visible { outline-color: #bceaff; }
+}
+
+/* ==========================================================================
+   Photographs in 3D — solid (no transparency), tilting toward the pointer with a
+   moving glare, a deeper shadow and the picture drifting inside its frame.
+   ========================================================================== */
+.lg-photo {
+  --ph-r: 14px;
+  display: block; position: relative; isolation: isolate; overflow: hidden;
+  border-radius: var(--ph-r);
+  transform: perspective(900px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) translateY(0);
+  box-shadow: 0 1px 2px rgba(11,42,69,.1), 0 10px 22px -14px rgba(11,42,69,.4), 0 28px 48px -32px rgba(11,42,69,.45);
+  transition: transform 650ms var(--lg-ease), box-shadow 650ms var(--lg-ease),
+    --tilt-x 650ms var(--lg-ease), --tilt-y 650ms var(--lg-ease);
+  will-change: transform;
+}
+.member .lg-photo { --ph-r: var(--radius); }
+.lg-photo:has(.article-cover) { --ph-r: var(--radius); margin-bottom: 26px; }
+.lg-photo > img { display: block; margin: 0 !important; border: 0 !important; border-radius: 0 !important;
+  transition: transform 650ms var(--lg-ease); }
+.lg-photo > .lg-glare {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none; border-radius: inherit;
+  background:
+    radial-gradient(520px circle at var(--glow-x, 30%) var(--glow-y, -10%), rgba(255,255,255,.42), rgba(255,255,255,0) 42%),
+    linear-gradient(155deg, rgba(255,255,255,.16), rgba(255,255,255,0) 38%, rgba(0,0,0,0) 70%, rgba(0,20,40,.12));
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.22), inset 0 1px 0 rgba(255,255,255,.5), inset 0 -1px 0 rgba(0,0,0,.08);
+  opacity: .6; transition: opacity 650ms var(--lg-ease);
+}
+.lg-photo.lg-hot {
+  transform: perspective(900px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) translateY(-6px);
+  box-shadow: 0 2px 4px rgba(11,42,69,.1),
+    var(--shadow-x, 0px) 18px 30px -16px rgba(11,42,69,.45),
+    calc(var(--shadow-x, 0px) * 1.6) 40px 60px -34px rgba(11,42,69,.5);
+  transition: transform 160ms ease-out, box-shadow 200ms ease-out;
+}
+.lg-photo.lg-hot > img {
+  transform: translate(calc(var(--par-x, 0px) * -1.4), calc(var(--par-y, 0px) * -1.4)) scale(1.07);
+  transition: transform 200ms ease-out;
+}
+.lg-photo.lg-hot > .lg-glare { opacity: 1; }
+
+/* Photos inside a glass panel: framed, and drifting against the panel's tilt */
+.lg-frame {
+  display: block; position: relative; overflow: hidden;
+  border-radius: calc(var(--radius) - 1px) calc(var(--radius) - 1px) 0 0;
+}
+.lg-frame > img { display: block; border-radius: 0 !important; transition: transform 650ms var(--lg-ease); }
+.lg-frame-box { overflow: hidden; }
+.lg-frame-box img { transition: transform 650ms var(--lg-ease); }
+.lg-panel.lg-hot .lg-frame > img, .lg-panel.lg-hot .lg-frame-box img, .project-card.lg-hot > img {
+  transform: translate(calc(var(--par-x, 0px) * -1.5), calc(var(--par-y, 0px) * -1.5)) scale(1.07);
+  transition: transform 200ms ease-out;
+}
+.project-card.lg-hot > img { transform: translate(calc(var(--par-x, 0px) * 1.5), calc(var(--par-y, 0px) * 1.5)) scale(1.06); }
+@media (prefers-reduced-motion: reduce) {
+  .lg-photo, .lg-photo > img, .lg-frame > img, .lg-frame-box img { transition: none !important; transform: none !important; }
+}
+
+/* ==========================================================================
+   Accessibility and fallbacks
+   ========================================================================== */
+@media (hover: none), (pointer: coarse) {
+  .lg-button:hover { --angle-1: -75deg; }
+  .btn.lg:hover { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lg, .lg > *, .lg-panel .body { transition: none !important; }
+  .btn.lg:hover, .btn.lg:active, .lg-panel.lg-hot { transform: none !important; }
+  .stat.lg-counted .num { animation: none; }
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .lg > .lg-refract { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+  .lg > .lg-shine { display: none; }
+  .site-header::before { background: #193b56 !important; }
+  .site-header:not(.over-dark)::before { background: #fff !important; }
+  .lg-panel, .btn.lg { background: #fff !important; }
+  .hero .btn.lg, .page-hero .btn.lg, .banner-dark .btn.lg { background: #193b56 !important; }
+  .site-nav .sub, .site-nav { background: #0f3150 !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+}
+@media (forced-colors: active) {
+  .lg > .lg-refract, .lg > .lg-rim, .lg > .lg-shine, .lg > .lg-shadow, .site-nav .sub::before { display: none; }
+}
